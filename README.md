@@ -210,9 +210,9 @@ docker run -d -p 8080:8080 babycare-backend
 
 ## 联系我们
 
-- **项目地址**：https://github.com/your-repo/babycare
-- **问题反馈**：https://github.com/your-repo/babycare/issues
-- **邮箱**：contact@huigrowth.com
+- **项目地址**：https://github.com/xiaoqianbaobao/babycare
+- **问题反馈**：https://github.com/xiaoqianbaobao/babycare/issues
+- **邮箱**：chenshengqian2020@gmail.com
 
 ## 更新日志
 
