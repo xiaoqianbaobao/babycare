@@ -1,0 +1,115 @@
+.dashboard {
+  padding: 0;
+}
+
+.baby-info-card {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.baby-info {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.baby-avatar {
+  border: 3px solid var(--primary-color);
+}
+
+.baby-details {
+  flex: 1;
+}
+
+.baby-name {
+  margin-bottom: 8px !important;
+  color: var(--text-color);
+}
+
+.baby-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.stats-row {
+  margin-bottom: 24px;
+}
+
+.stats-row .ant-card {
+  border-radius: 8px;
+  text-align: center;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--text-color-secondary);
+}
+
+.quick-actions {
+  margin-top: 24px;
+  border-radius: 12px;
+}
+
+.quick-btn {
+  height: 60px;
+  border-radius: 8px;
+  border: 2px dashed #d9d9d9;
+  color: var(--text-color-secondary);
+  transition: all 0.3s ease;
+}
+
+.quick-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background-color: rgba(255, 107, 53, 0.05);
+}
+
+.quick-btn .anticon {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .baby-info {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+  
+  .baby-actions {
+    justify-content: center;
+  }
+  
+  .stats-row .ant-col {
+    margin-bottom: 12px;
+  }
+  
+  .quick-btn {
+    height: 50px;
+    font-size: 14px;
+  }
+  
+  .quick-btn .anticon {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .baby-info {
+    gap: 12px;
+  }
+  
+  .baby-avatar {
+    width: 60px !important;
+    height: 60px !important;
+  }
+  
+  .baby-name {
+    font-size: 20px !important;
+  }
+}

@@ -1,0 +1,286 @@
+.auth-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.auth-content {
+  width: 100%;
+  max-width: 480px;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.auth-logo {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+}
+
+.auth-title {
+  color: white !important;
+  margin-bottom: 8px !important;
+  font-weight: 600;
+}
+
+.auth-subtitle {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 16px;
+}
+
+.auth-card {
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border: none;
+  overflow: hidden;
+}
+
+.auth-card .ant-card-body {
+  padding: 40px;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.form-actions label {
+  color: var(--text-color-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.form-actions input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.forgot-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+.submit-btn {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.submit-btn:hover {
+  background: var(--primary-color-hover);
+  border-color: var(--primary-color-hover);
+}
+
+.wechat-btn {
+  height: 48px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #07c160;
+  color: #07c160;
+}
+
+.wechat-btn:hover {
+  background: #07c160;
+  color: white;
+  border-color: #07c160;
+}
+
+.register-link,
+.login-link {
+  text-align: center;
+  margin-top: 16px;
+  color: var(--text-color-secondary);
+}
+
+.register-link a,
+.login-link a {
+  color: var(--primary-color);
+  text-decoration: none;
+  margin-left: 4px;
+}
+
+.register-link a:hover,
+.login-link a:hover {
+  text-decoration: underline;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 32px;
+}
+
+.footer-text {
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 14px;
+}
+
+/* 注册页面特殊样式 */
+.register-card {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.register-card .ant-card-body {
+  padding: 48px;
+}
+
+.register-steps {
+  margin-bottom: 40px;
+}
+
+.register-steps .ant-steps-item-finish .ant-steps-item-icon {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.register-steps .ant-steps-item-process .ant-steps-item-icon {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.register-form {
+  min-height: 400px;
+}
+
+.step-content {
+  min-height: 300px;
+  padding: 20px 0;
+}
+
+.step-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.prev-btn {
+  height: 40px;
+  padding: 0 24px;
+  border-radius: 6px;
+}
+
+.next-btn,
+.step-actions .submit-btn {
+  height: 40px;
+  padding: 0 24px;
+  border-radius: 6px;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.register-complete {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.success-icon {
+  font-size: 64px;
+  color: var(--success-color);
+  margin-bottom: 24px;
+}
+
+.register-complete .ant-typography {
+  margin-bottom: 16px;
+}
+
+.agreement-item {
+  margin-top: 32px;
+  text-align: left;
+}
+
+.agreement-item label {
+  color: var(--text-color-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  line-height: 1.6;
+}
+
+.agreement-item label a {
+  color: var(--primary-color);
+  text-decoration: none;
+  margin: 0 4px;
+}
+
+.agreement-item label a:hover {
+  text-decoration: underline;
+}
+
+.agreement-item input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .auth-container {
+    padding: 16px;
+  }
+  
+  .auth-content {
+    max-width: 100%;
+  }
+  
+  .auth-card .ant-card-body {
+    padding: 24px;
+  }
+  
+  .register-card .ant-card-body {
+    padding: 32px 24px;
+  }
+  
+  .auth-title {
+    font-size: 24px !important;
+  }
+  
+  .auth-subtitle {
+    font-size: 14px;
+  }
+  
+  .step-content {
+    min-height: 250px;
+  }
+  
+  .register-complete {
+    padding: 20px 10px;
+  }
+  
+  .success-icon {
+    font-size: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  .step-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .prev-btn,
+  .next-btn,
+  .step-actions .submit-btn {
+    width: 100%;
+    order: 2;
+  }
+  
+  .prev-btn {
+    order: 1;
+  }
+}
