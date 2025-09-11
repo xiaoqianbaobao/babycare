@@ -60,6 +60,16 @@ public interface EducationActivityRepository extends JpaRepository<EducationActi
     long countByEducationPlanAndStatus(EducationPlan educationPlan, EducationActivity.ActivityStatus status);
 
     /**
+     * 统计计划的活动总数
+     */
+    long countByEducationPlan(EducationPlan educationPlan);
+
+    /**
+     * 删除计划的所有活动
+     */
+    void deleteByEducationPlan(EducationPlan educationPlan);
+
+    /**
      * 查找过期未完成的活动
      */
     @Query("SELECT ea FROM EducationActivity ea WHERE ea.educationPlan = :plan " +

@@ -79,6 +79,37 @@ public class FamilyPostService {
     }
 
     /**
+     * 更新家庭动态
+     */
+    @Transactional
+    public FamilyPostResponse updatePost(String username, Long postId, FamilyPostCreateRequest request) throws JsonProcessingException {
+        log.info("更新家庭动态: username={}, postId={}, request={}", username, postId, request);
+
+        // 查找用户
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException("用户不存在"));
+
+        // 查找动态
+        FamilyPost post = familyPostRepository.findById(postId)
+                .orElseThrow(() -> new BusinessException("动态不存在"));
+
+        // 验证权限（只有作者可以更新）
+        if (!post.getAuthor().getId().equals(user.getId())) {
+            throw new BusinessException("您没有权限更新该动态");
+        }
+
+        // 更新家庭动态
+        post.setContent(request.getContent());
+        post.setImages(objectMapper.writeValueAsString(request.getImages()));
+        post.setVideos(objectMapper.writeValueAsString(request.getVideos()));
+
+        FamilyPost savedPost = familyPostRepository.save(post);
+        log.info("成功更新家庭动态: id={}", savedPost.getId());
+
+        return convertToPostResponse(savedPost);
+    }
+
+    /**
      * 获取家庭的动态
      */
     public Page<FamilyPostResponse> getFamilyPosts(String username, Long familyId, int page, int size) {

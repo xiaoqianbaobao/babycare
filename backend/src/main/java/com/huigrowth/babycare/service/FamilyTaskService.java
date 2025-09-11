@@ -90,6 +90,51 @@ public class FamilyTaskService {
     }
 
     /**
+     * 更新家庭任务
+     */
+    @Transactional
+    public FamilyTaskResponse updateTask(String username, Long taskId, FamilyTaskCreateRequest request) {
+        log.info("更新家庭任务: username={}, taskId={}, request={}", username, taskId, request);
+
+        // 查找用户
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException("用户不存在"));
+
+        // 查找任务
+        FamilyTask task = familyTaskRepository.findById(taskId)
+                .orElseThrow(() -> new BusinessException("任务不存在"));
+
+        // 验证权限（只有分配者或家庭创建者可以更新）
+        if (!task.getAssignedBy().getId().equals(user.getId()) && 
+            !isFamilyCreator(user, task.getFamily())) {
+            throw new BusinessException("您没有权限更新该任务");
+        }
+
+        // 查找被分配的用户
+        User assignee = userRepository.findById(request.getAssigneeId())
+                .orElseThrow(() -> new BusinessException("被分配的用户不存在"));
+
+        // 验证被分配的用户是否属于该家庭
+        if (!hasAccessToFamily(assignee, task.getFamily())) {
+            throw new BusinessException("被分配的用户不属于该家庭");
+        }
+
+        // 更新家庭任务
+        task.setTitle(request.getTitle());
+        task.setDescription(request.getDescription());
+        task.setAssignedTo("[" + assignee.getId() + "]"); // 简化处理，实际可能支持多个分配
+        task.setDueDate(request.getDueDate());
+        task.setPriority(FamilyTask.TaskPriority.valueOf(request.getPriority()));
+        task.setCategory(FamilyTask.TaskCategory.valueOf(request.getCategory()));
+        task.setReminderTime(request.getReminderTime());
+
+        FamilyTask savedTask = familyTaskRepository.save(task);
+        log.info("成功更新家庭任务: id={}", savedTask.getId());
+
+        return convertToTaskResponse(savedTask);
+    }
+
+    /**
      * 获取家庭的任务
      */
     public Page<FamilyTaskResponse> getFamilyTasks(String username, Long familyId, int page, int size) {

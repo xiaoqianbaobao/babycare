@@ -42,6 +42,33 @@ public class EducationPlanController {
         return ApiResponse.success("教育计划创建成功", response);
     }
 
+    @Operation(summary = "更新教育计划", description = "更新教育计划信息")
+    @PutMapping("/{planId}")
+    public ApiResponse<EducationPlanResponse> updatePlan(
+            @Parameter(description = "计划ID") @PathVariable Long planId,
+            @Valid @RequestBody EducationPlanCreateRequest request,
+            Authentication authentication) {
+        log.info("更新教育计划请求: planId={}, request={}", planId, request);
+        
+        EducationPlanResponse response = educationPlanService.updatePlan(
+                authentication.getName(), planId, request);
+        
+        return ApiResponse.success("教育计划更新成功", response);
+    }
+
+    @Operation(summary = "删除教育计划", description = "删除教育计划")
+    @DeleteMapping("/{planId}")
+    public ApiResponse<String> deletePlan(
+            @Parameter(description = "计划ID") @PathVariable Long planId,
+            Authentication authentication) {
+        log.info("删除教育计划请求: planId={}", planId);
+        
+        educationPlanService.deletePlan(
+                authentication.getName(), planId);
+        
+        return ApiResponse.success("教育计划删除成功");
+    }
+
     @Operation(summary = "获取宝宝教育计划", description = "分页获取指定宝宝的教育计划")
     @GetMapping("/baby/{babyId}")
     public ApiResponse<Page<EducationPlanResponse>> getBabyPlans(

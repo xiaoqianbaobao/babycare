@@ -20,7 +20,8 @@ import {
   Spin,
   Space,
   Pagination,
-  Alert
+  Alert,
+  Popconfirm
 } from 'antd'
 import {
   CameraOutlined,
@@ -31,7 +32,8 @@ import {
   PlusOutlined,
   EyeOutlined,
   HeartOutlined,
-  UploadOutlined
+  UploadOutlined,
+  DeleteOutlined
 } from '@ant-design/icons'
 import type { TabsProps, UploadFile } from 'antd'
 import { useAuthStore } from '../../stores/authStore'
@@ -48,6 +50,8 @@ interface CreateRecordModalProps {
   onSubmit: (values: any) => void
   babies: any[]
   loading: boolean
+  record?: IGrowthRecord | null
+  isEdit?: boolean
 }
 
 const CreateRecordModal: React.FC<CreateRecordModalProps> = ({ 
@@ -55,11 +59,37 @@ const CreateRecordModal: React.FC<CreateRecordModalProps> = ({
   onCancel, 
   onSubmit, 
   babies, 
-  loading 
+  loading,
+  record,
+  isEdit = false
 }) => {
   const [form] = Form.useForm()
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [recordType, setRecordType] = useState<string>('PHOTO')
+
+  useEffect(() => {
+    if (visible && record && isEdit) {
+      form.setFieldsValue({
+        ...record,
+        babyId: parseInt(record.babyId)
+      })
+      setRecordType(record.type)
+      // Set file list for editing
+      if (record.mediaUrls) {
+        const files = record.mediaUrls.map((url, index) => ({
+          uid: `${index}`,
+          name: `media-${index}`,
+          status: 'done' as const,
+          url: url
+        }))
+        setFileList(files)
+      }
+    } else if (visible && !isEdit) {
+      form.resetFields()
+      setFileList([])
+      setRecordType('PHOTO')
+    }
+  }, [visible, record, isEdit, form])
 
   const handleSubmit = async () => {
     try {
@@ -68,6 +98,7 @@ const CreateRecordModal: React.FC<CreateRecordModalProps> = ({
       
       await onSubmit({
         ...values,
+        babyId: parseInt(values.babyId),
         mediaUrls,
         type: recordType
       })
@@ -91,12 +122,12 @@ const CreateRecordModal: React.FC<CreateRecordModalProps> = ({
 
   return (
     <Modal
-      title="创建成长记录"
+      title={isEdit ? "编辑成长记录" : "创建成长记录"}
       open={visible}
       onCancel={onCancel}
       onOk={babies.length > 0 ? handleSubmit : () => window.location.hash = '#/family-management'}
       confirmLoading={loading}
-      okText={babies.length > 0 ? "创建" : "去添加宝宝"}
+      okText={babies.length > 0 ? (isEdit ? "更新" : "创建") : "去添加宝宝"}
       width={600}
     >
       <Form form={form} layout="vertical">
@@ -106,7 +137,7 @@ const CreateRecordModal: React.FC<CreateRecordModalProps> = ({
             label="选择宝宝"
             rules={[{ required: true, message: '请选择宝宝' }]}
           >
-            <Select placeholder="请选择宝宝">
+            <Select placeholder="请选择宝宝" disabled={isEdit}>
               {babies.map(baby => (
                 <Option key={baby.id} value={baby.id}>
                   {baby.name}
@@ -125,7 +156,7 @@ const CreateRecordModal: React.FC<CreateRecordModalProps> = ({
         )}
 
         <Form.Item label="记录类型">
-          <Select value={recordType} onChange={setRecordType}>
+          <Select value={recordType} onChange={setRecordType} disabled={isEdit}>
             <Option value="PHOTO">📷 照片</Option>
             <Option value="VIDEO">🎬 视频</Option>
             <Option value="DIARY">📝 日记</Option>
@@ -164,6 +195,7 @@ const CreateRecordModal: React.FC<CreateRecordModalProps> = ({
             mode="tags"
             placeholder="添加标签"
             tokenSeparators={[',', ' ']}
+            defaultValue={record?.tags || []}
           >
             <Option value="第一次">第一次</Option>
             <Option value="可爱">可爱</Option>
@@ -188,25 +220,30 @@ const GrowthRecord: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [showCreateBabyPrompt, setShowCreateBabyPrompt] = useState(false)
+  const [editingRecord, setEditingRecord] = useState<IGrowthRecord | null>(null)
   const pageSize = 12
 
   // 模拟数据
   useEffect(() => {
-    loadRecords()
-    loadBabies()
+    loadBabies().then((loadedBabies) => {
+      if (loadedBabies && loadedBabies.length > 0) {
+        loadRecords(loadedBabies[0].id)
+      }
+    })
   }, [activeTab, currentPage])
 
-  const loadRecords = async () => {
+  const loadRecords = async (babyId?: string) => {
     setLoading(true)
     try {
-      // 如果有宝宝数据，加载第一个宝宝的记录
-      if (babies.length > 0) {
-        const babyId = parseInt(babies[0].id);
+      // 如果没有传入babyId，则使用第一个宝宝的ID
+      const targetBabyId = babyId || (babies.length > 0 ? babies[0].id : null)
+      
+      if (targetBabyId) {
         let response;
         
         if (activeTab !== 'all') {
           // 按类型获取记录
-          response = await growthRecordAPI.getRecordsByType(babyId, activeTab.toUpperCase());
+          response = await growthRecordAPI.getRecordsByType(parseInt(targetBabyId), activeTab.toUpperCase());
           const recordsData = response.data || [];
           setRecords(recordsData.map((record: any) => ({
             id: record.id?.toString() || '',
@@ -223,7 +260,7 @@ const GrowthRecord: React.FC = () => {
           setTotal(recordsData.length);
         } else {
           // 获取所有记录
-          response = await growthRecordAPI.getBabyRecords(babyId, currentPage - 1, pageSize);
+          response = await growthRecordAPI.getBabyRecords(parseInt(targetBabyId), currentPage - 1, pageSize);
           const recordsData = response.data?.content || [];
           setRecords(recordsData.map((record: any) => ({
             id: record.id?.toString() || '',
@@ -326,6 +363,8 @@ const GrowthRecord: React.FC = () => {
       } else {
         setShowCreateBabyPrompt(false);
       }
+      
+      return allBabies;
     } catch (error) {
       console.error('加载宝宝信息失败:', error);
       message.error('加载宝宝信息失败');
@@ -336,6 +375,7 @@ const GrowthRecord: React.FC = () => {
       ]);
       setShowCreateBabyPrompt(false);
     }
+    return [];
   }
 
   const handleCreateRecord = async (values: any) => {
@@ -343,7 +383,7 @@ const GrowthRecord: React.FC = () => {
     try {
       // 调用实际的API创建成长记录
       await growthRecordAPI.createRecord({
-        babyId: parseInt(values.babyId),
+        babyId: values.babyId,
         type: values.type,
         title: values.title,
         content: values.content,
@@ -353,13 +393,69 @@ const GrowthRecord: React.FC = () => {
       
       message.success('记录创建成功')
       setCreateModalVisible(false)
-      loadRecords() // 重新加载记录
+      // 重新加载记录
+      if (babies.length > 0) {
+        loadRecords(babies[0].id)
+      }
     } catch (error) {
       console.error('创建记录失败:', error);
       message.error('创建记录失败')
     } finally {
       setCreateLoading(false)
     }
+  }
+
+  const handleEditRecord = async (values: any) => {
+    setCreateLoading(true)
+    try {
+      if (!editingRecord) {
+        message.error('编辑的记录不存在')
+        return
+      }
+      
+      // 调用实际的API更新成长记录
+      await growthRecordAPI.updateRecord(parseInt(editingRecord.id), {
+        babyId: values.babyId,
+        type: values.type,
+        title: values.title,
+        content: values.content,
+        mediaUrls: values.mediaUrls,
+        tags: values.tags
+      })
+      
+      message.success('记录更新成功')
+      setCreateModalVisible(false)
+      setEditingRecord(null)
+      // 重新加载记录
+      if (babies.length > 0) {
+        loadRecords(babies[0].id)
+      }
+    } catch (error) {
+      console.error('编辑记录失败:', error);
+      message.error('编辑记录失败')
+    } finally {
+      setCreateLoading(false)
+    }
+  }
+
+  const handleDeleteRecord = async (recordId: string) => {
+    try {
+      // 调用实际的API删除成长记录
+      await growthRecordAPI.deleteRecord(parseInt(recordId))
+      message.success('记录删除成功')
+      // 重新加载记录
+      if (babies.length > 0) {
+        loadRecords(babies[0].id)
+      }
+    } catch (error) {
+      console.error('删除记录失败:', error);
+      message.error('删除记录失败')
+    }
+  }
+
+  const openEditModal = (record: IGrowthRecord) => {
+    setEditingRecord(record)
+    setCreateModalVisible(true)
   }
 
   const getTypeIcon = (type: string) => {
@@ -457,7 +553,10 @@ const GrowthRecord: React.FC = () => {
                 type="primary" 
                 size="large" 
                 icon={<PlusOutlined />}
-                onClick={() => setCreateModalVisible(true)}
+                onClick={() => {
+                  setEditingRecord(null)
+                  setCreateModalVisible(true)
+                }}
               >
                 创建记录
               </Button>
@@ -495,7 +594,10 @@ const GrowthRecord: React.FC = () => {
                   <Button 
                     type="primary" 
                     icon={<PlusOutlined />}
-                    onClick={() => setCreateModalVisible(true)}
+                    onClick={() => {
+                      setEditingRecord(null)
+                      setCreateModalVisible(true)
+                    }}
                   >
                     创建第一条记录
                   </Button>
@@ -527,6 +629,26 @@ const GrowthRecord: React.FC = () => {
                             )
                           }
                           actions={[
+                            <Button 
+                              type="link" 
+                              icon={<EditOutlined />} 
+                              key="edit"
+                              onClick={() => openEditModal(record)}
+                            >
+                              编辑
+                            </Button>,
+                            <Popconfirm
+                              title="确认删除"
+                              description="确定要删除这条成长记录吗？"
+                              onConfirm={() => handleDeleteRecord(record.id)}
+                              okText="确认"
+                              cancelText="取消"
+                              key="delete"
+                            >
+                              <Button type="link" icon={<DeleteOutlined />} danger>
+                                删除
+                              </Button>
+                            </Popconfirm>,
                             <Space key="view">
                               <EyeOutlined />
                               <Text type="secondary">123</Text>
@@ -599,10 +721,15 @@ const GrowthRecord: React.FC = () => {
 
       <CreateRecordModal
         visible={createModalVisible}
-        onCancel={() => setCreateModalVisible(false)}
-        onSubmit={handleCreateRecord}
+        onCancel={() => {
+          setCreateModalVisible(false)
+          setEditingRecord(null)
+        }}
+        onSubmit={editingRecord ? handleEditRecord : handleCreateRecord}
         babies={babies}
         loading={createLoading}
+        record={editingRecord}
+        isEdit={!!editingRecord}
       />
     </div>
   )

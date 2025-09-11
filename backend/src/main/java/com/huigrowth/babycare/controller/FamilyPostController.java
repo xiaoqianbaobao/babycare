@@ -42,6 +42,20 @@ public class FamilyPostController {
         return ApiResponse.success("动态发布成功", response);
     }
 
+    @Operation(summary = "更新家庭动态", description = "更新家庭动态")
+    @PutMapping("/{postId}")
+    public ApiResponse<FamilyPostResponse> updatePost(
+            @Parameter(description = "动态ID") @PathVariable Long postId,
+            @Valid @RequestBody FamilyPostCreateRequest request,
+            Authentication authentication) throws JsonProcessingException {
+        log.info("更新家庭动态请求: postId={}, request={}", postId, request);
+        
+        FamilyPostResponse response = familyPostService.updatePost(
+                authentication.getName(), postId, request);
+        
+        return ApiResponse.success("动态更新成功", response);
+    }
+
     @Operation(summary = "获取家庭动态", description = "分页获取指定家庭的动态")
     @GetMapping("/family/{familyId}")
     public ApiResponse<Page<FamilyPostResponse>> getFamilyPosts(

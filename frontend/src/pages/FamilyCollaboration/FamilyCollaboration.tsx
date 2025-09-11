@@ -17,7 +17,8 @@ import {
   DatePicker,
   message,
   Row,
-  Col
+  Col,
+  Popconfirm
 } from 'antd'
 import {
   TeamOutlined,
@@ -27,7 +28,9 @@ import {
   HeartOutlined,
   CommentOutlined,
   PlusOutlined,
-  LikeOutlined
+  LikeOutlined,
+  EditOutlined,
+  DeleteOutlined
 } from '@ant-design/icons'
 import type { TabsProps } from 'antd'
 import { useAuthStore } from '../../stores/authStore'
@@ -138,6 +141,8 @@ const FamilyCollaboration: React.FC = () => {
   const [taskForm] = Form.useForm()
   const [families, setFamilies] = useState<Family[]>([])
   const [selectedFamilyId, setSelectedFamilyId] = useState<number | null>(null)
+  const [editingPost, setEditingPost] = useState<FamilyPost | null>(null)
+  const [editingTask, setEditingTask] = useState<FamilyTask | null>(null)
 
   // 加载数据
   useEffect(() => {
@@ -223,6 +228,37 @@ const FamilyCollaboration: React.FC = () => {
     }
   }
 
+  const handleEditPost = async (values: CreatePostForm) => {
+    try {
+      if (!editingPost) {
+        message.error('编辑的动态不存在')
+        return
+      }
+      
+      // 调用实际的API更新家庭动态
+      await familyPostAPI.updatePost(editingPost.id, values)
+      message.success('动态更新成功')
+      setCreatePostModalVisible(false)
+      setEditingPost(null)
+      loadPosts()
+    } catch (error) {
+      console.error('编辑动态失败:', error)
+      message.error('编辑动态失败')
+    }
+  }
+
+  const handleDeletePost = async (postId: number) => {
+    try {
+      // 调用实际的API删除家庭动态
+      await familyPostAPI.deletePost(postId)
+      message.success('动态删除成功')
+      loadPosts()
+    } catch (error) {
+      console.error('删除动态失败:', error)
+      message.error('删除动态失败')
+    }
+  }
+
   const handleCreateTask = async (values: CreateTaskForm) => {
     try {
       // 转换日期格式为ISO 8601格式
@@ -243,6 +279,44 @@ const FamilyCollaboration: React.FC = () => {
     }
   }
 
+  const handleEditTask = async (values: CreateTaskForm) => {
+    try {
+      if (!editingTask) {
+        message.error('编辑的任务不存在')
+        return
+      }
+      
+      // 转换日期格式为ISO 8601格式
+      const requestData = {
+        ...values,
+        dueDate: values.dueDate ? values.dueDate.toISOString() : undefined,
+        reminderTime: values.reminderTime ? values.reminderTime.toISOString() : undefined
+      }
+      
+      // 调用实际的API更新家庭任务
+      await familyTaskAPI.updateTask(editingTask.id, requestData)
+      message.success('任务更新成功')
+      setCreateTaskModalVisible(false)
+      setEditingTask(null)
+      loadTasks()
+    } catch (error) {
+      console.error('编辑任务失败:', error)
+      message.error('编辑任务失败')
+    }
+  }
+
+  const handleDeleteTask = async (taskId: number) => {
+    try {
+      // 调用实际的API删除家庭任务
+      await familyTaskAPI.deleteTask(taskId)
+      message.success('任务删除成功')
+      loadTasks()
+    } catch (error) {
+      console.error('删除任务失败:', error)
+      message.error('删除任务失败')
+    }
+  }
+
   const handleLikePost = async (postId: number) => {
     try {
       await familyPostAPI.likePost(postId)
@@ -252,6 +326,29 @@ const FamilyCollaboration: React.FC = () => {
       console.error('点赞失败:', error)
       message.error('点赞失败')
     }
+  }
+
+  const openEditPostModal = (post: FamilyPost) => {
+    setEditingPost(post)
+    setCreatePostModalVisible(true)
+    postForm.setFieldsValue({
+      familyId: post.familyId,
+      content: post.content
+    })
+  }
+
+  const openEditTaskModal = (task: FamilyTask) => {
+    setEditingTask(task)
+    setCreateTaskModalVisible(true)
+    taskForm.setFieldsValue({
+      familyId: task.familyId,
+      title: task.title,
+      description: task.description,
+      assigneeId: task.assigneeId,
+      category: task.category,
+      priority: task.priority,
+      dueDate: task.dueDate ? new Date(task.dueDate) : null
+    })
   }
 
   const getStatusColor = (status: string) => {
@@ -312,23 +409,32 @@ const FamilyCollaboration: React.FC = () => {
 
   const CreatePostModal: React.FC = () => (
     <Modal
-      title="发布动态"
+      title={editingPost ? "编辑动态" : "发布动态"}
       open={createPostModalVisible}
       onCancel={() => {
         setCreatePostModalVisible(false)
         postForm.resetFields()
+        setEditingPost(null)
       }}
       onOk={() => postForm.submit()}
       width={600}
     >
-      <Form form={postForm} layout="vertical" onFinish={handleCreatePost}>
+      <Form 
+        form={postForm} 
+        layout="vertical" 
+        onFinish={editingPost ? handleEditPost : handleCreatePost}
+        initialValues={editingPost ? {
+          familyId: editingPost.familyId,
+          content: editingPost.content
+        } : {}}
+      >
         <Form.Item
           name="familyId"
           label="选择家庭"
           rules={[{ required: true, message: '请选择家庭' }]}
           initialValue={selectedFamilyId}
         >
-          <Select placeholder="请选择家庭">
+          <Select placeholder="请选择家庭" disabled={!!editingPost}>
             {families.map(family => (
               <Option key={family.id} value={family.id}>
                 {family.name}
@@ -355,23 +461,37 @@ const FamilyCollaboration: React.FC = () => {
 
   const CreateTaskModal: React.FC = () => (
     <Modal
-      title="创建任务"
+      title={editingTask ? "编辑任务" : "创建任务"}
       open={createTaskModalVisible}
       onCancel={() => {
         setCreateTaskModalVisible(false)
         taskForm.resetFields()
+        setEditingTask(null)
       }}
       onOk={() => taskForm.submit()}
       width={600}
     >
-      <Form form={taskForm} layout="vertical" onFinish={handleCreateTask}>
+      <Form 
+        form={taskForm} 
+        layout="vertical" 
+        onFinish={editingTask ? handleEditTask : handleCreateTask}
+        initialValues={editingTask ? {
+          familyId: editingTask.familyId,
+          title: editingTask.title,
+          description: editingTask.description,
+          assigneeId: editingTask.assigneeId,
+          category: editingTask.category,
+          priority: editingTask.priority,
+          dueDate: editingTask.dueDate ? new Date(editingTask.dueDate) : null
+        } : {}}
+      >
         <Form.Item
           name="familyId"
           label="选择家庭"
           rules={[{ required: true, message: '请选择家庭' }]}
           initialValue={selectedFamilyId}
         >
-          <Select placeholder="请选择家庭">
+          <Select placeholder="请选择家庭" disabled={!!editingTask}>
             {families.map(family => (
               <Option key={family.id} value={family.id}>
                 {family.name}
@@ -460,7 +580,10 @@ const FamilyCollaboration: React.FC = () => {
             <Button 
               type="primary" 
               icon={<PlusOutlined />}
-              onClick={() => setCreatePostModalVisible(true)}
+              onClick={() => {
+                setEditingPost(null)
+                setCreatePostModalVisible(true)
+              }}
               disabled={!selectedFamilyId}
             >
               发布动态
@@ -501,6 +624,24 @@ const FamilyCollaboration: React.FC = () => {
                             <Text type="secondary" style={{ fontSize: '12px' }}>
                               👁️ {post.viewCount}
                             </Text>
+                            <Button 
+                              type="link" 
+                              icon={<EditOutlined />}
+                              onClick={() => openEditPostModal(post)}
+                            >
+                              编辑
+                            </Button>
+                            <Popconfirm
+                              title="确认删除"
+                              description="确定要删除这条动态吗？"
+                              onConfirm={() => handleDeletePost(post.id)}
+                              okText="确认"
+                              cancelText="取消"
+                            >
+                              <Button type="link" icon={<DeleteOutlined />} danger>
+                                删除
+                              </Button>
+                            </Popconfirm>
                           </Space>
                         </div>
                       }
@@ -529,7 +670,10 @@ const FamilyCollaboration: React.FC = () => {
             <Button 
               type="primary" 
               icon={<PlusOutlined />}
-              onClick={() => setCreateTaskModalVisible(true)}
+              onClick={() => {
+                setEditingTask(null)
+                setCreateTaskModalVisible(true)
+              }}
               disabled={!selectedFamilyId}
             >
               创建任务
@@ -566,6 +710,26 @@ const FamilyCollaboration: React.FC = () => {
                         <Text type="secondary" style={{ fontSize: '12px' }}>
                           负责人：{task.assigneeNickname || task.assigneeUsername} · 分配者：{task.assignedByNickname || task.assignedByUsername} · 截止日期：{task.dueDate ? new Date(task.dueDate).toLocaleString() : '无'}
                         </Text>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <Button 
+                          type="link" 
+                          icon={<EditOutlined />}
+                          onClick={() => openEditTaskModal(task)}
+                        >
+                          编辑
+                        </Button>
+                        <Popconfirm
+                          title="确认删除"
+                          description="确定要删除这个任务吗？"
+                          onConfirm={() => handleDeleteTask(task.id)}
+                          okText="确认"
+                          cancelText="取消"
+                        >
+                          <Button type="link" icon={<DeleteOutlined />} danger>
+                            删除
+                          </Button>
+                        </Popconfirm>
                       </div>
                     </Space>
                   </Card>

@@ -135,6 +135,14 @@ export const growthRecordAPI = {
   createRecord: (data: any) => 
     request.post('/growth-record/create', data),
     
+  // 更新成长记录
+  updateRecord: (recordId: number, data: any) => 
+    request.put(`/growth-record/${recordId}`, data),
+    
+  // 删除成长记录
+  deleteRecord: (recordId: number) => 
+    request.delete(`/growth-record/${recordId}`),
+    
   // 获取宝宝成长记录
   getBabyRecords: (babyId: number, page: number, size: number) => 
     request.get(`/growth-record/baby/${babyId}?page=${page}&size=${size}`),
@@ -153,6 +161,14 @@ export const educationPlanAPI = {
   // 创建教育计划
   createPlan: (data: any) => 
     request.post('/education-plan/create', data),
+    
+  // 更新教育计划
+  updatePlan: (planId: number, data: any) => 
+    request.put(`/education-plan/${planId}`, data),
+    
+  // 删除教育计划
+  deletePlan: (planId: number) => 
+    request.delete(`/education-plan/${planId}`),
     
   // 获取宝宝教育计划
   getBabyPlans: (babyId: number, page: number = 0, size: number = 10) => 
@@ -200,6 +216,14 @@ export const familyPostAPI = {
   createPost: (data: any) => 
     request.post('/family-post/create', data),
     
+  // 更新家庭动态
+  updatePost: (postId: number, data: any) => 
+    request.put(`/family-post/${postId}`, data),
+    
+  // 删除家庭动态
+  deletePost: (postId: number) => 
+    request.delete(`/family-post/${postId}`),
+    
   // 获取家庭动态
   getFamilyPosts: (familyId: number, page: number = 0, size: number = 20) => 
     request.get(`/family-post/family/${familyId}?page=${page}&size=${size}`),
@@ -218,6 +242,14 @@ export const familyTaskAPI = {
   // 创建家庭任务
   createTask: (data: any) => 
     request.post('/family-task/create', data),
+    
+  // 更新家庭任务
+  updateTask: (taskId: number, data: any) => 
+    request.put(`/family-task/${taskId}`, data),
+    
+  // 删除家庭任务
+  deleteTask: (taskId: number) => 
+    request.delete(`/family-task/${taskId}`),
     
   // 获取家庭任务
   getFamilyTasks: (familyId: number, page: number = 0, size: number = 20) => 

@@ -41,6 +41,20 @@ public class FamilyTaskController {
         return ApiResponse.success("任务创建成功", response);
     }
 
+    @Operation(summary = "更新家庭任务", description = "更新家庭任务")
+    @PutMapping("/{taskId}")
+    public ApiResponse<FamilyTaskResponse> updateTask(
+            @Parameter(description = "任务ID") @PathVariable Long taskId,
+            @Valid @RequestBody FamilyTaskCreateRequest request,
+            Authentication authentication) {
+        log.info("更新家庭任务请求: taskId={}, request={}", taskId, request);
+        
+        FamilyTaskResponse response = familyTaskService.updateTask(
+                authentication.getName(), taskId, request);
+        
+        return ApiResponse.success("任务更新成功", response);
+    }
+
     @Operation(summary = "获取家庭任务", description = "分页获取指定家庭的任务")
     @GetMapping("/family/{familyId}")
     public ApiResponse<Page<FamilyTaskResponse>> getFamilyTasks(

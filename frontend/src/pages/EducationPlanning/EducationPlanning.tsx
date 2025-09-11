@@ -22,7 +22,8 @@ import {
   Avatar,
   Divider,
   Timeline,
-  Rate
+  Rate,
+  Popconfirm
 } from 'antd'
 import {
   BookOutlined,
@@ -33,11 +34,13 @@ import {
   PlayCircleOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  EditOutlined
+  EditOutlined,
+  DeleteOutlined
 } from '@ant-design/icons'
 import type { TabsProps } from 'antd'
 import { useAuthStore } from '../../stores/authStore'
 import { educationPlanAPI, familyAPI } from '../../services/api'
+import dayjs from 'dayjs'
 
 const { Title, Paragraph, Text } = Typography
 const { TextArea } = Input
@@ -100,6 +103,8 @@ interface CreatePlanModalProps {
   onSubmit: (values: any) => void
   babies: Baby[]
   loading: boolean
+  plan?: EducationPlan | null
+  isEdit?: boolean
 }
 
 const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ 
@@ -107,9 +112,24 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
   onCancel, 
   onSubmit, 
   babies, 
-  loading 
+  loading,
+  plan,
+  isEdit = false
 }) => {
   const [form] = Form.useForm()
+
+  useEffect(() => {
+    if (visible && plan && isEdit) {
+      form.setFieldsValue({
+        ...plan,
+        startDate: plan.startDate ? dayjs(plan.startDate) : null,
+        endDate: plan.endDate ? dayjs(plan.endDate) : null,
+        babyId: plan.babyId
+      })
+    } else if (visible && !isEdit) {
+      form.resetFields()
+    }
+  }, [visible, plan, isEdit, form])
 
   const handleSubmit = async () => {
     try {
@@ -123,7 +143,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
 
   return (
     <Modal
-      title="创建教育计划"
+      title={isEdit ? "编辑教育计划" : "创建教育计划"}
       open={visible}
       onCancel={onCancel}
       onOk={handleSubmit}
@@ -136,7 +156,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
           label="选择宝宝"
           rules={[{ required: true, message: '请选择宝宝' }]}
         >
-          <Select placeholder="请选择宝宝">
+          <Select placeholder="请选择宝宝" disabled={isEdit}>
             {babies.map(baby => (
               <Option key={baby.id} value={baby.id}>
                 {baby.name}
@@ -244,19 +264,27 @@ const EducationPlanning: React.FC = () => {
   const [createLoading, setCreateLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('plans')
   const [selectedPlan, setSelectedPlan] = useState<EducationPlan | null>(null)
+  const [editingPlan, setEditingPlan] = useState<EducationPlan | null>(null)
 
   // 加载数据
   useEffect(() => {
-    loadPlans()
     loadBabies()
   }, [])
 
-  const loadPlans = async () => {
+  useEffect(() => {
+    if (babies.length > 0) {
+      loadPlans(babies[0].id)
+    }
+  }, [babies])
+
+  const loadPlans = async (babyId?: number) => {
     setLoading(true)
     try {
-      // 获取第一个宝宝的ID来加载计划
-      if (babies.length > 0) {
-        const response = await educationPlanAPI.getBabyPlans(babies[0].id, 0, 20)
+      // 如果没有传入babyId，则使用第一个宝宝的ID
+      const targetBabyId = babyId || (babies.length > 0 ? babies[0].id : null)
+      
+      if (targetBabyId) {
+        const response = await educationPlanAPI.getBabyPlans(targetBabyId, 0, 20)
         // 由于API返回的是分页数据，我们需要提取内容
         if (response && response.data && response.data.content) {
           setPlans(response.data.content)
@@ -292,11 +320,13 @@ const EducationPlanning: React.FC = () => {
           }
         })
         setBabies(allBabies)
+        return allBabies
       }
     } catch (error) {
       console.error('加载宝宝信息失败:', error)
       message.error('加载宝宝信息失败')
     }
+    return []
   }
 
   const handleCreatePlan = async (values: any) => {
@@ -312,13 +342,66 @@ const EducationPlanning: React.FC = () => {
       await educationPlanAPI.createPlan(requestData)
       message.success('教育计划创建成功')
       setCreateModalVisible(false)
-      loadPlans()
+      // 重新加载计划
+      if (babies.length > 0) {
+        loadPlans(babies[0].id)
+      }
     } catch (error) {
       console.error('创建教育计划失败:', error)
       message.error('创建教育计划失败')
     } finally {
       setCreateLoading(false)
     }
+  }
+
+  const handleEditPlan = async (values: any) => {
+    setCreateLoading(true)
+    try {
+      if (!editingPlan) {
+        message.error('编辑的计划不存在')
+        return
+      }
+      
+      // 转换日期格式
+      const requestData = {
+        ...values,
+        startDate: values.startDate ? values.startDate.format('YYYY-MM-DD') : undefined,
+        endDate: values.endDate ? values.endDate.format('YYYY-MM-DD') : undefined
+      }
+      
+      await educationPlanAPI.updatePlan(editingPlan.id, requestData)
+      message.success('教育计划更新成功')
+      setCreateModalVisible(false)
+      setEditingPlan(null)
+      // 重新加载计划
+      if (babies.length > 0) {
+        loadPlans(babies[0].id)
+      }
+    } catch (error) {
+      console.error('编辑教育计划失败:', error)
+      message.error('编辑教育计划失败')
+    } finally {
+      setCreateLoading(false)
+    }
+  }
+
+  const handleDeletePlan = async (planId: number) => {
+    try {
+      await educationPlanAPI.deletePlan(planId)
+      message.success('教育计划删除成功')
+      // 重新加载计划
+      if (babies.length > 0) {
+        loadPlans(babies[0].id)
+      }
+    } catch (error) {
+      console.error('删除教育计划失败:', error)
+      message.error('删除教育计划失败')
+    }
+  }
+
+  const openEditModal = (plan: EducationPlan) => {
+    setEditingPlan(plan)
+    setCreateModalVisible(true)
   }
 
   const getCategoryIcon = (category: string) => {
@@ -393,9 +476,26 @@ const EducationPlanning: React.FC = () => {
                   <Card
                     hoverable
                     actions={[
-                      <Button type="link" icon={<EditOutlined />} key="edit">
+                      <Button 
+                        type="link" 
+                        icon={<EditOutlined />} 
+                        key="edit"
+                        onClick={() => openEditModal(plan)}
+                      >
                         编辑
                       </Button>,
+                      <Popconfirm
+                        title="确认删除"
+                        description="确定要删除这个教育计划吗？"
+                        onConfirm={() => handleDeletePlan(plan.id)}
+                        okText="确认"
+                        cancelText="取消"
+                        key="delete"
+                      >
+                        <Button type="link" icon={<DeleteOutlined />} danger>
+                          删除
+                        </Button>
+                      </Popconfirm>,
                       plan.status === 'ACTIVE' ? (
                         <Button type="link" icon={<CheckCircleOutlined />} key="complete">
                           完成
@@ -553,7 +653,10 @@ const EducationPlanning: React.FC = () => {
             type="primary" 
             size="large" 
             icon={<PlusOutlined />}
-            onClick={() => setCreateModalVisible(true)}
+            onClick={() => {
+              setEditingPlan(null)
+              setCreateModalVisible(true)
+            }}
           >
             创建计划
           </Button>
@@ -568,10 +671,15 @@ const EducationPlanning: React.FC = () => {
 
       <CreatePlanModal
         visible={createModalVisible}
-        onCancel={() => setCreateModalVisible(false)}
-        onSubmit={handleCreatePlan}
+        onCancel={() => {
+          setCreateModalVisible(false)
+          setEditingPlan(null)
+        }}
+        onSubmit={editingPlan ? handleEditPlan : handleCreatePlan}
         babies={babies}
         loading={createLoading}
+        plan={editingPlan}
+        isEdit={!!editingPlan}
       />
     </div>
   )

@@ -97,6 +97,81 @@ public class GrowthRecordService {
     }
 
     /**
+     * 更新成长记录
+     */
+    @Transactional
+    public GrowthRecordResponse updateRecord(String username, Long recordId, GrowthRecordCreateRequest request) {
+        log.info("更新成长记录: username={}, recordId={}, request={}", username, recordId, request);
+
+        // 查找用户
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException("用户不存在"));
+
+        // 查找记录
+        GrowthRecord record = growthRecordRepository.findById(recordId)
+                .orElseThrow(() -> new BusinessException("记录不存在"));
+
+        // 验证用户是否有权限更新该记录
+        if (!hasAccessToBaby(user, record.getBaby())) {
+            throw new BusinessException("您没有权限更新该记录");
+        }
+
+        // 更新成长记录
+        record.setType(GrowthRecord.RecordType.valueOf(request.getType()));
+        record.setTitle(request.getTitle());
+        record.setContent(request.getContent());
+        
+        // 处理媒体URLs
+        if (request.getMediaUrls() != null && !request.getMediaUrls().isEmpty()) {
+            try {
+                record.setMediaUrls(objectMapper.writeValueAsString(request.getMediaUrls()));
+            } catch (JsonProcessingException e) {
+                log.error("序列化媒体URLs失败", e);
+                throw new BusinessException("媒体URLs格式错误");
+            }
+        }
+
+        // 处理标签
+        if (request.getTags() != null && !request.getTags().isEmpty()) {
+            try {
+                record.setTags(objectMapper.writeValueAsString(request.getTags()));
+            } catch (JsonProcessingException e) {
+                log.error("序列化标签失败", e);
+                throw new BusinessException("标签格式错误");
+            }
+        }
+
+        GrowthRecord savedRecord = growthRecordRepository.save(record);
+        log.info("成功更新成长记录: id={}", savedRecord.getId());
+
+        return convertToResponse(savedRecord);
+    }
+
+    /**
+     * 删除成长记录
+     */
+    @Transactional
+    public void deleteRecord(String username, Long recordId) {
+        log.info("删除成长记录: username={}, recordId={}", username, recordId);
+
+        // 查找用户
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException("用户不存在"));
+
+        // 查找记录
+        GrowthRecord record = growthRecordRepository.findById(recordId)
+                .orElseThrow(() -> new BusinessException("记录不存在"));
+
+        // 验证用户是否有权限删除该记录
+        if (!hasAccessToBaby(user, record.getBaby())) {
+            throw new BusinessException("您没有权限删除该记录");
+        }
+
+        growthRecordRepository.delete(record);
+        log.info("成功删除成长记录: id={}", recordId);
+    }
+
+    /**
      * 获取宝宝的成长记录（分页）
      */
     public Page<GrowthRecordResponse> getBabyRecords(String username, Long babyId, int page, int size) {

@@ -72,6 +72,70 @@ public class EducationPlanService {
     }
 
     /**
+     * 更新教育计划
+     */
+    @Transactional
+    public EducationPlanResponse updatePlan(String username, Long planId, EducationPlanCreateRequest request) {
+        log.info("更新教育计划: username={}, planId={}, request={}", username, planId, request);
+
+        // 查找用户
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException("用户不存在"));
+
+        // 查找计划
+        EducationPlan plan = educationPlanRepository.findById(planId)
+                .orElseThrow(() -> new BusinessException("教育计划不存在"));
+
+        // 验证权限
+        if (!hasAccessToBaby(user, plan.getBaby())) {
+            throw new BusinessException("您没有权限操作该教育计划");
+        }
+
+        // 更新教育计划
+        plan.setName(request.getName());
+        plan.setDescription(request.getDescription());
+        plan.setCategory(EducationPlan.EducationCategory.valueOf(request.getCategory()));
+        plan.setStartDate(request.getStartDate());
+        plan.setEndDate(request.getEndDate());
+        plan.setTargetAgeMonths(request.getTargetAgeMonths());
+        plan.setDifficultyLevel(request.getDifficultyLevel());
+        plan.setGoals(request.getGoals());
+
+        EducationPlan savedPlan = educationPlanRepository.save(plan);
+        log.info("成功更新教育计划: id={}", savedPlan.getId());
+
+        return convertToPlanResponse(savedPlan);
+    }
+
+    /**
+     * 删除教育计划
+     */
+    @Transactional
+    public void deletePlan(String username, Long planId) {
+        log.info("删除教育计划: username={}, planId={}", username, planId);
+
+        // 查找用户
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException("用户不存在"));
+
+        // 查找计划
+        EducationPlan plan = educationPlanRepository.findById(planId)
+                .orElseThrow(() -> new BusinessException("教育计划不存在"));
+
+        // 验证权限
+        if (!hasAccessToBaby(user, plan.getBaby())) {
+            throw new BusinessException("您没有权限操作该教育计划");
+        }
+
+        // 删除相关的活动
+        educationActivityRepository.deleteByEducationPlan(plan);
+        
+        // 删除计划
+        educationPlanRepository.delete(plan);
+        log.info("成功删除教育计划: id={}", planId);
+    }
+
+    /**
      * 获取宝宝的教育计划（分页）
      */
     public Page<EducationPlanResponse> getBabyPlans(String username, Long babyId, int page, int size) {
@@ -323,9 +387,13 @@ public class EducationPlanService {
         response.setUpdatedAt(plan.getUpdatedAt());
 
         // 统计活动数量
-        // response.setTotalActivities((int) educationActivityRepository.count());
-        // response.setCompletedActivities((int) educationActivityRepository.countByEducationPlanAndStatus(plan, EducationActivity.ActivityStatus.COMPLETED));
-        // response.setPendingActivities((int) educationActivityRepository.countByEducationPlanAndStatus(plan, EducationActivity.ActivityStatus.PENDING));
+        long totalActivities = educationActivityRepository.countByEducationPlan(plan);
+        long completedActivities = educationActivityRepository.countByEducationPlanAndStatus(plan, EducationActivity.ActivityStatus.COMPLETED);
+        long pendingActivities = educationActivityRepository.countByEducationPlanAndStatus(plan, EducationActivity.ActivityStatus.PENDING);
+        
+        response.setTotalActivities((int) totalActivities);
+        response.setCompletedActivities((int) completedActivities);
+        response.setPendingActivities((int) pendingActivities);
 
         return response;
     }

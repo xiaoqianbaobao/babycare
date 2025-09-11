@@ -43,6 +43,33 @@ public class GrowthRecordController {
         return ApiResponse.success("成长记录创建成功", response);
     }
 
+    @Operation(summary = "更新成长记录", description = "更新成长记录信息")
+    @PutMapping("/{recordId}")
+    public ApiResponse<GrowthRecordResponse> updateRecord(
+            @Parameter(description = "记录ID") @PathVariable Long recordId,
+            @Valid @RequestBody GrowthRecordCreateRequest request,
+            Authentication authentication) {
+        log.info("更新成长记录请求: recordId={}, request={}", recordId, request);
+        
+        GrowthRecordResponse response = growthRecordService.updateRecord(
+                authentication.getName(), recordId, request);
+        
+        return ApiResponse.success("成长记录更新成功", response);
+    }
+
+    @Operation(summary = "删除成长记录", description = "删除成长记录")
+    @DeleteMapping("/{recordId}")
+    public ApiResponse<String> deleteRecord(
+            @Parameter(description = "记录ID") @PathVariable Long recordId,
+            Authentication authentication) {
+        log.info("删除成长记录请求: recordId={}", recordId);
+        
+        growthRecordService.deleteRecord(
+                authentication.getName(), recordId);
+        
+        return ApiResponse.success("成长记录删除成功");
+    }
+
     @Operation(summary = "获取宝宝成长记录", description = "分页获取指定宝宝的成长记录")
     @GetMapping("/baby/{babyId}")
     public ApiResponse<Page<GrowthRecordResponse>> getBabyRecords(
@@ -101,12 +128,12 @@ public class GrowthRecordController {
 
     @Operation(summary = "记录查看", description = "增加记录的查看次数")
     @PostMapping("/{recordId}/view")
-    public ApiResponse<Void> viewRecord(
+    public ApiResponse<String> viewRecord(
             @Parameter(description = "记录ID") @PathVariable Long recordId) {
         log.info("记录查看: recordId={}", recordId);
         
         growthRecordService.incrementViewCount(recordId);
         
-        return ApiResponse.success();
+        return ApiResponse.success("查看记录成功");
     }
 }
